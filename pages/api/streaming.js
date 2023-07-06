@@ -10,13 +10,31 @@ export default function handler(req, res) {
     if (!input) {
       throw new Error("No input");
     }
+
+    console.log({ input });
+
     // Initialize model
+    const chatModel = new OpenAI({
+      streaming: true,
+      verbose: true,
+      callbacks: [
+        {
+          handleLLMNewToken(token) {
+            sse.send(token, "newToken");
+          },
+        },
+      ],
+    });
 
     // create the prompt
+    const prompt = `Create me a short rap about my name and city. Make it funny and punny. Name: ${input}.`;
 
     // call frontend to backend
+    chatModel.call(prompt).then(() => {
+      sse.send(null, "end");
+    });
 
-    return res.status(200).json({ result: "OK" });
+    return res.status(200).json({ result: "Streaming complete" });
   } else if (req.method === "GET") {
     sse.init(req, res);
   } else {
