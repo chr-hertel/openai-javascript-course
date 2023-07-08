@@ -14,9 +14,9 @@ const nextConfig = {
   env: {
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     SERPAPI_API_KEY: process.env.SERPAPI_API_KEY,
-    PINCONE_API_KEY: process.env.PINCONE_API_KEY,
-    PINCONE_ENV: process.env.PINCONE_ENV,
-    PINCODE_INDEX: process.env.PINCODE_INDEX,
+    PINECONE_API_KEY: process.env.PINECONE_API_KEY,
+    PINECONE_ENVIRONMENT: process.env.PINECONE_ENVIRONMENT,
+    PINECODE_INDEX: process.env.PINECODE_INDEX,
   },
 };
 

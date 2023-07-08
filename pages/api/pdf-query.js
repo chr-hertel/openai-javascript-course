@@ -23,10 +23,26 @@ export default async function handler(req, res) {
     console.log("input received:", input);
 
     /* Use as part of a chain (currently no metadata filters) */
-
     // Initialize Pinecone
+    const client = new PineconeClient();
+    await client.init({
+      apiKey: process.env.PINECONE_API_KEY,
+      environment: process.env.PINECONE_ENVIRONMENT,
+    });
+    const index = client.Index(process.env.PINECONE_INDEX);
 
     // Search!
+    const store = await PineconeStore.fromExistingIndex(
+      new OpenAIEmbeddings(),
+      { pineconeIndex: index }
+    );
+    const model = new OpenAI();
+    const chain = VectorDBQAChain.fromLLM(model, store, {
+      k: 1,
+      returnSourceDocuments: true,
+    });
+
+    const response = await chain.call({ query: input });
 
     return res.status(200).json({ result: response });
   } catch (error) {
