@@ -5,8 +5,20 @@ export default async function getVideoMetaData(videoId) {
   const url = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${process.env.GOOGLE_API_KEY}&part=snippet,contentDetails,statistics,status`;
 
   try {
-    // { data: {items: [metadata]}}
+    const response = await axios.get(url);
+    const data = response.data;
+    const metadata = data.items[0];
+
     // Clean up the response
+    const videoTitle = metadata.snippet.title;
+    const videoDescription = metadata.snippet.description;
+    const shortenedDescription = videoDescription.split(".")[0];
+
+    return {
+      videoTitle,
+      videoDescription: shortenedDescription,
+      videoId,
+    };
   } catch (err) {
     console.error(`Failed to get metadata: ${err}`);
   }
