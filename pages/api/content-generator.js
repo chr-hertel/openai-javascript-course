@@ -12,11 +12,47 @@ import getVideoMetaData from "../../utils/getVideoMetaData";
 import ResearchAgent from "../../agents/ResearchAgent";
 
 // Global Variables
+let chain;
+let chatHistory = [];
+let transcript = "";
+let metadataString = "";
+let research;
 
 // Initialize Chain with Data
 const initChain = async (transcript, metadataString, research, topic) => {
   try {
-    // do stuff
+    const llm = new ChatOpenAI({
+      temperature: 0.7,
+      modelName: "gpt-3.5-turbo",
+    });
+
+    const chatPrompt = ChatPromptTemplate.fromPromptMessages([
+      SystemMessagePromptTemplate.fromTemplate(
+        "You are a helpful social media assistant that provides research, new content, and advice to me. \n You are given the transcript of the video: {transcript} \n and video metadata: {metadata} as well as additional research: {research}"
+      ),
+      HumanMessagePromptTemplate.fromTemplate(
+        "{input}. Remeber to use the video transcript and research as reference."
+      ),
+    ]);
+
+    const question = `Write me a script for a new video that provides commentary on this video in a lighthearted, joking manner. It should compliment ${topic} with puns.}`;
+
+    chain = new LLMChain({
+      prompt: chatPrompt,
+      llm: llm,
+    });
+
+    const response = await chain.call({
+      transcript,
+      metadata: metadataString,
+      research,
+      input: question,
+    });
+
+    chatHistory.push({
+      role: "assistant",
+      content: response.text,
+    });
 
     return response;
   } catch (error) {
@@ -51,6 +87,37 @@ export default async function handler(req, res) {
     console.log("Received URL");
     try {
       // Initialize chain with transcript, metadata, research, and topic
+      const videoId = extractVideoId(prompt);
+      console.log(`Video ID: ${videoId}`);
+      const transcriptResponse = await YoutubeTranscript.fetchTranscript(
+        videoId
+      );
+
+      if (!transcriptResponse) {
+        return res.status(400).json({
+          error: "An error occurred while fetching transcript",
+        });
+      }
+
+      transcriptResponse.forEach((line) => {
+        transcript += `${line.text} `;
+      });
+
+      const metadata = await getVideoMetaData(videoId);
+      console.log({ metadata });
+      metadataString = JSON.stringify(metadata, null, 2);
+      console.log({ metadataString });
+
+      research = await ResearchAgent(topic);
+      console.log({ research });
+
+      // Create chain
+      const response = await initChain(
+        transcript,
+        metadataString,
+        research,
+        topic
+      );
 
       // return res.status(200).json({ output: research });
       return res.status(200).json({
@@ -70,7 +137,18 @@ export default async function handler(req, res) {
     // Very similar to previous section, don't worry too much about this just copy and paste it from the previous section!
     console.log("Received question");
     try {
-      // do stuff
+      const question = prompt;
+      const response = await chain.call({
+        transcript,
+        metadata: metadataString,
+        research,
+        input: question,
+      });
+
+      chatHistory.push({
+        role: "assistant",
+        content: response.text,
+      });
 
       // just make sure to modify this response as necessary.
       return res.status(200).json({
